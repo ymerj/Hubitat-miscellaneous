@@ -15,32 +15,12 @@
  *
  * =======================================================================================
  * 
- * BUTTON NUMBER/EVENT MAPPING:
- * 
- * "Base" button number:
- *   - relay/large button = button 5
- *   - small top left = button 1
- *   - small top right = button 2
- *   - small bottom left = button 3
- *   - small bottom right = button 4
- * Single taps, hold, and release:
- *  - base button number pushed, held, and released events
- * Multi-taps:
- *  - mathematically, a pushed event for button number = (base button number)  + (5 * (number of taps - 1))
-      ... or specifically:
- *     * "button 1" taps: button 1, 6, 11, 16, or 21 pushed (taps 1-5)
- *     * "button 2" taps: button 2, 7, 12, 17, or 22 pushed (taps 1-5)
- *     * "button 3" taps: button 3, 8, 13, 18, or 23 pushed (taps 1-5)
- *     * "button 4" taps: button 4, 9, 14, 19, or 24 pushed (taps 1-5)
- *     * "button 5" taps: button 5, 10, 15, 20, or 25 pushed (taps 1-5)
- *
- * 
  *  Changelog:
  *  v2.0    (2022-02-20): Add Indicator command class support (thanks to @jtp10181); requires ZEN32 firmware 10.10 or greater
  *  v1.0.1  (2021-04-23): Fix typo in BasicGet; pad firmware subversion with 0 as needed
  *  v1.0    (2021-04-01): Initial Release
 
-**** modified by ymerj to be used as multiple child switch
+**** modified by Yves Mercier to be used as multiple child switch
  */
  
 import groovy.transform.Field
@@ -87,7 +67,7 @@ import groovy.transform.Field
  
 metadata
     {
-    definition (name: "Zooz Scene Controller (ZEN32)", namespace: "ymerj", author: "Robert Morris", importUrl: "https://raw.githubusercontent.com/RMoRobert/Hubitat/master/drivers/zooz/zooz-zen32-scene-ctlr.groovy")
+    definition (name: "Zooz Switch Controller (ZEN32)", namespace: "ymerj", author: "Robert Morris", importUrl: "https://raw.githubusercontent.com/ymerj/Hubitat-miscellaneous/main/Zen32.groovy")
         {
         capability "Actuator"
         capability "Switch"
@@ -268,7 +248,14 @@ void release(btnNum)
     {
     //sendEvent(name: "released", value: btnNum, isStateChange: true, type: "digital")
     }
- 
+
+def uninstalled()
+    {
+    log.info("uninstalled...")
+    unschedule()
+    deleteAllChildDevices()
+    }
+
 void installed()
     {
     log.warn "Installed..."
@@ -451,4 +438,10 @@ def removeChild(btnNum)
     {
     def ch = getChildDevice("${device.id}-${btnNum}")
     if (ch) {deleteChildDevice("${device.id}-${btnNum}")}
+    }
+
+def deleteAllChildDevices()
+    {
+    log.info "Uninstalling all Child Devices"
+    getChildDevices().each {deleteChildDevice(it.deviceNetworkId)}
     }
