@@ -67,7 +67,7 @@ import groovy.transform.Field
  
 metadata
     {
-    definition (name: "Zooz Switch Controller (ZEN32)", namespace: "ymerj", author: "Robert Morris", importUrl: "https://raw.githubusercontent.com/ymerj/Hubitat-miscellaneous/main/Zen32.groovy")
+    definition (name: "Zooz MultiSwitch Controller (ZEN32)", namespace: "ymerj", author: "Robert Morris", importUrl: "https://raw.githubusercontent.com/ymerj/Hubitat-miscellaneous/main/Zen32.groovy")
         {
         capability "Actuator"
         capability "Switch"
