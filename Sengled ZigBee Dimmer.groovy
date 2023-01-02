@@ -13,7 +13,7 @@
  */
 
 //   Original source: https://github.com/SmartThingsCommunity/SmartThingsPublic/blob/master/devicetypes/smartthings/zigbee-battery-accessory-dimmer.src/zigbee-battery-accessory-dimmer.groovy
-//   modified by ymerj for discrete level step
+//   modified by Yves Mercier for discrete level step
 
 import hubitat.zigbee.zcl.DataType
 
