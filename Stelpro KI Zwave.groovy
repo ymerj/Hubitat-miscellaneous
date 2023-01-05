@@ -316,16 +316,9 @@ def adjustHeatSetpoint(amount)
 
 def switchMode()
     {
-    def currentMode = device.currentState("thermostatMode")?.value
-    def lastTriedMode = state.lastTriedMode ?: currentMode ?: "heat"
-    def modeOrder = ["heat", "eco"]
-    def next = { modeOrder[modeOrder.indexOf(it) + 1] ?: modeOrder[0] }
-    def nextMode = next(lastTriedMode)
-    state.lastTriedMode = nextMode
-    delayBetween([
-        zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[nextMode]).format(),
-        zwave.thermostatModeV2.thermostatModeGet().format()
-        ], 1000)
+    def currentMode = device.currentValue("thermostatMode")
+    if (currentMode == "heat") eco()
+    else heat()
     }
 
 def getModeMap()
@@ -386,17 +379,8 @@ def cool()
 
 def setThermostatMode(String value)
     {
-    if ((value == "eco") || (value == "heat"))
-        {
-        delayBetween([
-        zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[value]).format(),
-        zwave.thermostatModeV2.thermostatModeGet().format()
-        ], 1000)
-        }
-    else
-        {
-        log.warn "Unsupported mode"
-        }
+    if (value == "eco") eco()
+    else heat()
     }
 
 def fanOn()
