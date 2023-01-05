@@ -22,9 +22,9 @@
         capability "ThermostatHeatingSetpoint"
         capability "ThermostatMode"
         capability "ThermostatOperatingState"
-        // capability "ThermostatSetpoint"
+        capability "ThermostatSetpoint"
         capability "Temperature Measurement"
-        // capability "Thermostat"
+        capability "Thermostat"
         capability "Configuration"
         // capability "Polling"
         capability "Sensor"
@@ -33,9 +33,9 @@
 
         // attribute "outsideTemp", "number"
         attribute "heatingSetpoint",                "NUMBER"
-        attribute "supportedThermostatModes",       "ENUM", ["heat","off"]
+        attribute "supportedThermostatModes",       "ENUM", ["heat","eco"]
         attribute "temperature",                    "NUMBER"
-        attribute "thermostatMode",                 "ENUM", ["heat","off"]
+        attribute "thermostatMode",                 "ENUM", ["heat","eco"]
         attribute "thermostatOperatingState",       "ENUM", ["heating","idle"]
         attribute "thermostatSetpoint",             "NUMBER"
         
@@ -44,7 +44,7 @@
         // command "quickSetOutTemp"
         command "increaseHeatSetpoint"
         command "decreaseHeatSetpoint"
-        command ("setThermostatMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["heat","off"]]])
+        command ("setThermostatMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["heat","eco"]]])
         command "eco"
         command "heat"
         command "adjustHeatSetpoint", [[name: "Temperature adjustment", type: "NUMBER"]]
@@ -192,7 +192,7 @@ def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeReport cmd)
             map.value = "heat"
         break        
         case '11':
-            map.value = "off"
+            map.value = "eco"
         break
         }
     map.name = "thermostatMode"
@@ -224,7 +224,7 @@ def zwaveEvent(hubitat.zwave.Command cmd)
 
 def configure()
     {
-    sendEvent(name: "supportedThermostatModes", value: '["heat","off"]', descriptionText: 'supportedThermostatModes set to ["heat","off"]')
+    sendEvent(name: "supportedThermostatModes", value: '["heat","eco"]', descriptionText: 'supportedThermostatModes set to ["heat","eco"]')
     refresh()
     }
 
@@ -246,28 +246,20 @@ def setHeatingSetpoint(Double degrees, Integer delay = 100)
     def locationScale = getTemperatureScale()
     def p = (state.precision == null) ? 1 : state.precision
     def convertedDegrees
-    if (locationScale == "C" && deviceScaleString == "F")
-        {
-        convertedDegrees = celsiusToFahrenheit(degrees)
-        }
-    else if (locationScale == "F" && deviceScaleString == "C")
-        {
-        convertedDegrees = fahrenheitToCelsius(degrees)
-        }
-    else
-        {
-        convertedDegrees = degrees
-        } 
-        sendEvent(name: "heatingSetpoint", value: degrees, unit: locationScale)
-        sendEvent(name: "thermostatSetpoint", value: degrees, unit: locationScale)
-        delayBetween([
-            zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: 1, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
-            zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1).format()
-            ], delay)
+    if (locationScale == "C" && deviceScaleString == "F") convertedDegrees = celsiusToFahrenheit(degrees)
+    else if (locationScale == "F" && deviceScaleString == "C") convertedDegrees = fahrenheitToCelsius(degrees)
+    else convertedDegrees = degrees
+    sendEvent(name: "heatingSetpoint", value: degrees, unit: locationScale)
+    sendEvent(name: "thermostatSetpoint", value: degrees, unit: locationScale)
+    delayBetween([
+        zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: 1, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
+        zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1).format()
+        ], delay)
     }
 
 def increaseHeatSetpoint()
     {
+    if (device.currentValue("thermostatMode") == "eco") return // eco setpoint not adjustable through zwave
     float currentSetpoint = device.currentValue("heatingSetpoint")
     def locationScale = getTemperatureScale()
     float maxSetpoint
@@ -291,6 +283,7 @@ def increaseHeatSetpoint()
 
 def decreaseHeatSetpoint()
     {
+    if (device.currentValue("thermostatMode") == "eco") return // eco setpoint not adjustable through zwave
     float currentSetpoint = device.currentValue("heatingSetpoint")
     def locationScale = getTemperatureScale()
     float minSetpoint
@@ -325,7 +318,7 @@ def switchMode()
     {
     def currentMode = device.currentState("thermostatMode")?.value
     def lastTriedMode = state.lastTriedMode ?: currentMode ?: "heat"
-    def modeOrder = ["heat", "off"]
+    def modeOrder = ["heat", "eco"]
     def next = { modeOrder[modeOrder.indexOf(it) + 1] ?: modeOrder[0] }
     def nextMode = next(lastTriedMode)
     state.lastTriedMode = nextMode
@@ -338,7 +331,7 @@ def switchMode()
 def getModeMap()
     {[
     "heat": 1,
-    "off": 11,
+    "eco": 11,
     ]}
 
 def setCoolingSetpoint(coolingSetpoint)
@@ -393,7 +386,7 @@ def cool()
 
 def setThermostatMode(String value)
     {
-    if ((value == "off") || (value == "heat"))
+    if ((value == "eco") || (value == "heat"))
         {
         delayBetween([
         zwave.thermostatModeV2.thermostatModeSet(mode: modeMap[value]).format(),
