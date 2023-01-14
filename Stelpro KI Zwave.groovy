@@ -10,8 +10,9 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- * initial modifications by jrfarrar
- * further modifications by ymerj
+ * 1.1 initial modifications by jrfarrar
+ * 1.2 further modifications by ymerj
+ * 1.3 tentative modification for homekit and hubitat new take on thermostats
  */
  
  metadata
