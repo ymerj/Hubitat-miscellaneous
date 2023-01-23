@@ -13,6 +13,7 @@
  * 1.1 initial modifications by jrfarrar
  * 1.2 further modifications by ymerj
  * 1.3 tentative modification for homekit and hubitat new take on thermostats
+ * 1.4 add poll capability
  */
  
  metadata
@@ -27,7 +28,7 @@
         capability "Temperature Measurement"
         capability "Thermostat"
         capability "Configuration"
-        // capability "Polling"
+        capability "Polling"
         capability "Sensor"
         capability "Refresh"
         capability "Switch"
@@ -90,6 +91,10 @@ def parse(String description)
         }
         if (logEnable) log.debug "Parse returned $result"
         result
+    }
+def poll()
+    {
+     refresh()
     }
 
 def refresh()
