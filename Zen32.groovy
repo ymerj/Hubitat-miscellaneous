@@ -56,7 +56,7 @@ import groovy.transform.Field
 @Field static final Map zwaveParameters = [
    16: [input: [name: "param.16", type: "number", title: "[16] Automtically turn relay off after ... minutes (0=disable auto-off; default)", range: 0..65535], size: 4],
    17: [input: [name: "param.17", type: "number", title: "[17] Automtically turn relay on after ... minutes (0=disable auto-on; default)", range: 0..65535], size: 4],
-   18: [input: [name: "param.18", type: "enum", title: "[18] State on power restore (relay and buttons)", options: [[2: "Off"], [1: "On"], [0: "Previous state (default)"]]], size: 1],
+   18: [input: [name: "param.18", type: "enum", title: "[18] State on power restore (relay and buttons)", options: [[1: "Off"], [2: "On"], [0: "Previous state (default)"]]], size: 1],
    19: [input: [name: "param.19", type: "enum", title: "[19] Local (phyiscal) and Z-Wave control/smart bulb mode", options: [[0: "Disable local control, enable Z-Wave"], [1: "Enable local and Z-Wave control (default)"], [2: "Disable local and Z-Wave control"]]], size: 1],
    20: [input: [name: "param.20", type: "enum", title: "[20] Behavior of relay reports if local and/or Z-Wave control disabled (scene/button events are always sent)", options: [[0:"Send on/off reports and change LED"],[1:"Do not send on/off reports or change LED (default)"]]], size: 1],
    21: [input: [name: "param.21", type: "enum", title: "[21] 3-way switch type", options: [[0:"Mechanical (connected 3-way turns on/off) (default)"],[1:"Momentary (connected 3-way toggles on/off)"]]], size: 1]
