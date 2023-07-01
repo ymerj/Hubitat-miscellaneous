@@ -20,8 +20,9 @@
  *  v1.0.1  (2021-04-23): Fix typo in BasicGet; pad firmware subversion with 0 as needed
  *  v1.0    (2021-04-01): Initial Release
 
-**** modified by Yves Mercier to be used as multiple child switch
- */
+ *  3.0     (2023-01-02): Modified by Yves Mercier to be used as multiple child switch
+ *  3.0.1   (2023-07-01): Fix inverted value for state on power restore
+*/
  
 import groovy.transform.Field
  
