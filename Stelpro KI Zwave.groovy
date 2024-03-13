@@ -204,6 +204,7 @@ def configure()
     {
     sendEvent(name: "supportedThermostatModes", value: '["heat","off"]', descriptionText: 'supportedThermostatModes set to ["heat","off"]')
     refresh()
+    quickSetHeat(device.currentValue("heatingSetpoint"))
     }
 
 def quickSetHeat(degrees)
