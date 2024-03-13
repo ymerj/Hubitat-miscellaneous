@@ -14,42 +14,18 @@
  * 1.2 further modifications by ymerj
  * 1.3 tentative modification for homekit and hubitat new take on thermostats
  * 1.4 add poll capability
+ * 1.5 refactored for change in Google Home requirements
  */
  
  metadata
     {
     definition (name: "Stelpro Ki Thermostat", namespace: "stelpro", author: "Stelpro")
         {
-        capability "Actuator"
-        capability "ThermostatHeatingSetpoint"
-        capability "ThermostatMode"
-        capability "ThermostatOperatingState"
-        capability "ThermostatSetpoint"
-        capability "Temperature Measurement"
         capability "Thermostat"
         capability "Configuration"
-        capability "Polling"
-        capability "Sensor"
         capability "Refresh"
-        capability "Switch"
 
-        // attribute "outsideTemp", "number"
-        attribute "heatingSetpoint",                "NUMBER"
-        attribute "supportedThermostatModes",       "ENUM", ["heat","eco"]
-        attribute "temperature",                    "NUMBER"
-        attribute "thermostatMode",                 "ENUM", ["heat","eco"]
-        attribute "thermostatOperatingState",       "ENUM", ["heating","idle"]
-        attribute "thermostatSetpoint",             "NUMBER"
-        
-        command "switchMode"
-        // command "quickSetHeat"
-        // command "quickSetOutTemp"
-        command "increaseHeatSetpoint"
-        command "decreaseHeatSetpoint"
-        command ("setThermostatMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["heat","eco"]]])
-        command "eco"
-        command "heat"
-        command "adjustHeatSetpoint", [[name: "Temperature adjustment", type: "NUMBER"]]
+        command ("setThermostatMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["heat","off"]]])
 
         fingerprint deviceId: "0x0806", inClusters: "0x5E,0x86,0x72,0x40,0x43,0x31,0x85,0x59,0x5A,0x73,0x20,0x42"
         }      
@@ -91,10 +67,6 @@ def parse(String description)
         }
         if (logEnable) log.debug "Parse returned $result"
         result
-    }
-def poll()
-    {
-    refresh()
     }
 
 def refresh()
@@ -198,7 +170,7 @@ def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeReport cmd)
             map.value = "heat"
         break        
         case '11':
-            map.value = "eco"
+            map.value = "off"
         break
         }
     map.name = "thermostatMode"
@@ -230,7 +202,7 @@ def zwaveEvent(hubitat.zwave.Command cmd)
 
 def configure()
     {
-    sendEvent(name: "supportedThermostatModes", value: '["heat","eco"]', descriptionText: 'supportedThermostatModes set to ["heat","eco"]')
+    sendEvent(name: "supportedThermostatModes", value: '["heat","off"]', descriptionText: 'supportedThermostatModes set to ["heat","off"]')
     refresh()
     }
 
@@ -256,6 +228,7 @@ def setHeatingSetpoint(Double degrees, Integer delay = 100)
     else if (locationScale == "F" && deviceScaleString == "C") convertedDegrees = fahrenheitToCelsius(degrees)
     else convertedDegrees = degrees
     sendEvent(name: "heatingSetpoint", value: degrees, unit: locationScale)
+    sendEvent(name: "coolingSetpoint", value: degrees, unit: locationScale)
     sendEvent(name: "thermostatSetpoint", value: degrees, unit: locationScale)
     delayBetween([
         zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: 1, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
@@ -265,7 +238,7 @@ def setHeatingSetpoint(Double degrees, Integer delay = 100)
 
 def increaseHeatSetpoint()
     {
-    if (device.currentValue("thermostatMode") == "eco") return // eco setpoint not adjustable through zwave
+    if (device.currentValue("thermostatMode") == "off") return // eco setpoint not adjustable through zwave
     float currentSetpoint = device.currentValue("heatingSetpoint")
     def locationScale = getTemperatureScale()
     float maxSetpoint
@@ -289,7 +262,7 @@ def increaseHeatSetpoint()
 
 def decreaseHeatSetpoint()
     {
-    if (device.currentValue("thermostatMode") == "eco") return // eco setpoint not adjustable through zwave
+    if (device.currentValue("thermostatMode") == "off") return // eco setpoint not adjustable through zwave
     float currentSetpoint = device.currentValue("heatingSetpoint")
     def locationScale = getTemperatureScale()
     float minSetpoint
@@ -330,7 +303,7 @@ def switchMode()
 def getModeMap()
     {[
     "heat": 1,
-    "eco": 11,
+    "off": 11,
     ]}
 
 def setCoolingSetpoint(coolingSetpoint)
@@ -346,7 +319,6 @@ def on()
 def heat()
     {
     if (logEnable) log.debug "On (heat) mode applied"
-    sendEvent(name: "switch", value: "on", descriptionText: "${device.label} was turn on")
     delayBetween([
         zwave.thermostatModeV2.thermostatModeSet(mode: 1).format(),
         zwave.thermostatModeV2.thermostatModeGet().format()
@@ -361,7 +333,6 @@ def off()
 def eco()
     {
     if (logEnable) log.debug "Off (eco) mode applied"
-    sendEvent(name: "switch", value: "off", descriptionText: "${device.label} was turn off")
     delayBetween([
         zwave.thermostatModeV2.thermostatModeSet(mode: 11).format(),
         zwave.thermostatModeV2.thermostatModeGet().format()
@@ -385,7 +356,8 @@ def cool()
 
 def setThermostatMode(String value)
     {
-    if (value == "eco") eco()
+    //if (value == "eco") eco()
+    if (value == "off") off()
     else heat()
     }
 
