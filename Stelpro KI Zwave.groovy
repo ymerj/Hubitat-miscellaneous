@@ -15,7 +15,8 @@
  * 1.3 tentative modification for homekit and hubitat new take on thermostats
  * 1.4 add poll capability
  * 1.5 refactored for change in Google Home requirements
- * 1.6 add dummy supportedThermostatFanModes value
+ * 1.6 fix logging, reintroduce switch capability
+ * 1.7 Add fan modes, remove switch capability and reintroduce eco mode to comply with hubitat new dashboard app
  */
  
  metadata
@@ -23,10 +24,12 @@
     definition (name: "Stelpro Ki Thermostat", namespace: "stelpro", author: "Stelpro")
         {
         capability "Thermostat"
+        capability "Actuator"
         capability "Configuration"
         capability "Refresh"
 
-        command ("setThermostatMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["heat","off"]]])
+        command ("setThermostatMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["heat","eco"]]])
+        command ("setThermostatFanMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["auto"]]])
 
         fingerprint deviceId: "0x0806", inClusters: "0x5E,0x86,0x72,0x40,0x43,0x31,0x85,0x59,0x5A,0x73,0x20,0x42"
         }      
@@ -53,7 +56,7 @@ def parse(String description)
         else
             {
             def mode = device.latestValue("thermostatMode")
-            if (txtEnable) log.info "THERMOSTAT, latest mode = ${mode}"
+            if (txtEnable) log.info("THERMOSTAT, latest mode = ${mode}")
             if (map.name == "heatingSetpoint")
                 {
                 map2.value = map.value
@@ -62,12 +65,18 @@ def parse(String description)
             }
         if (map2.value != null)
             {
-            if (logEnable) log.debug "THERMOSTAT, adding setpoint event: $map"
+            if (logEnable) log.debug("THERMOSTAT, adding setpoint event: $map")
             result << createEvent(map2)
+
             }
         }
-        if (logEnable) log.debug "Parse returned $result"
-        result
+     if (map.name == "heatingSetpoint")
+        {
+        sendEvent(name: "coolingSetpoint", value: map.value, unit: locationScale)
+        sendEvent(name: "thermostatSetpoint", value: map.value, unit: locationScale)
+        }
+    if (logEnable) log.debug("Parse returned $result")
+    result
     }
 
 def refresh()
@@ -100,8 +109,14 @@ def zwaveEvent(hubitat.zwave.commands.thermostatsetpointv2.ThermostatSetpointRep
         }
     map.unit = getTemperatureScale()
     map.displayed = false
-    if (cmd.setpointType == 1) map.name = "heatingSetpoint"
-    else return [:]
+    if (cmd.setpointType == 1)
+        {
+        map.name = "heatingSetpoint"
+        }
+    else
+        {
+        return [:]
+        }
     state.size = cmd.size
     state.scale = cmd.scale
     state.precision = cmd.precision
@@ -164,14 +179,14 @@ def zwaveEvent(hubitat.zwave.commands.thermostatoperatingstatev1.ThermostatOpera
 def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeReport cmd)
     {
     def map = [:]
-    if (logEnable) log.debug "${cmd.mode}"
+    if (logEnable) log.debug("${cmd.mode}")
     switch (cmd.mode)
         {
         case '1':
             map.value = "heat"
         break        
         case '11':
-            map.value = "off"
+            map.value = "eco"
         break
         }
     map.name = "thermostatMode"
@@ -188,22 +203,22 @@ def zwaveEvent(hubitat.zwave.commands.associationv2.AssociationReport cmd)
 
 def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeSupportedReport cmd)
     {
-    if (logEnable) log.debug "Zwave event received: $cmd"
+    if (logEnable) log.debug("Zwave event received: $cmd")
     }
 
 def zwaveEvent(hubitat.zwave.commands.basicv1.BasicReport cmd)
     {
-    if (logEnable) log.debug "Zwave event received: $cmd"
+    if (logEnable) log.debug("Zwave event received: $cmd")
     }
 
 def zwaveEvent(hubitat.zwave.Command cmd)
     {
-    log.warn "Unexpected zwave command $cmd"
+    log.warn("Unexpected zwave command $cmd")
     }
 
 def configure()
     {
-    sendEvent(name: "supportedThermostatModes", value: '["heat","off"]', descriptionText: 'supportedThermostatModes set to ["heat","off"]')
+    sendEvent(name: "supportedThermostatModes", value: '["heat","eco"]', descriptionText: 'supportedThermostatModes set to ["heat","eco"]')
     sendEvent(name: "supportedThermostatFanModes", value: '["auto"]', descriptionText: 'supportedThermostatFanModes set to ["auto"]')
     refresh()
     quickSetHeat(device.currentValue("heatingSetpoint"))
@@ -221,7 +236,7 @@ def setHeatingSetpoint(degrees, delay = 100)
 
 def setHeatingSetpoint(Double degrees, Integer delay = 100)
     {
-    if (logEnable) log.debug "setHeatingSetpoint($degrees, $delay)"
+    if (logEnable) log.debug("setHeatingSetpoint($degrees, $delay)")
     def deviceScale = state.scale ?: 1
     def deviceScaleString = deviceScale == 2 ? "C" : "F"
     def locationScale = getTemperatureScale()
@@ -230,9 +245,6 @@ def setHeatingSetpoint(Double degrees, Integer delay = 100)
     if (locationScale == "C" && deviceScaleString == "F") convertedDegrees = celsiusToFahrenheit(degrees)
     else if (locationScale == "F" && deviceScaleString == "C") convertedDegrees = fahrenheitToCelsius(degrees)
     else convertedDegrees = degrees
-    sendEvent(name: "heatingSetpoint", value: degrees, unit: locationScale)
-    sendEvent(name: "coolingSetpoint", value: degrees, unit: locationScale)
-    sendEvent(name: "thermostatSetpoint", value: degrees, unit: locationScale)
     delayBetween([
         zwave.thermostatSetpointV2.thermostatSetpointSet(setpointType: 1, scale: deviceScale, precision: p, scaledValue: convertedDegrees).format(),
         zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1).format()
@@ -241,7 +253,7 @@ def setHeatingSetpoint(Double degrees, Integer delay = 100)
 
 def increaseHeatSetpoint()
     {
-    if (device.currentValue("thermostatMode") == "off") return // eco setpoint not adjustable through zwave
+    if (device.currentValue("thermostatMode") =="eco") return // eco setpoint not adjustable through zwave
     float currentSetpoint = device.currentValue("heatingSetpoint")
     def locationScale = getTemperatureScale()
     float maxSetpoint
@@ -265,7 +277,7 @@ def increaseHeatSetpoint()
 
 def decreaseHeatSetpoint()
     {
-    if (device.currentValue("thermostatMode") == "off") return // eco setpoint not adjustable through zwave
+    if (device.currentValue("thermostatMode") == "eco") return // eco setpoint not adjustable through zwave
     float currentSetpoint = device.currentValue("heatingSetpoint")
     def locationScale = getTemperatureScale()
     float minSetpoint
@@ -298,44 +310,39 @@ def adjustHeatSetpoint(amount)
 
 def switchMode()
     {
-    def currentMode = device.currentValue("thermostatMode")
-    if (currentMode == "heat") eco()
-    else heat()
+    if (device.currentValue("thermostatMode") == "heat")
+        {
+        eco()
+        }
+    else
+        {
+        heat()
+        }
     }
 
 def getModeMap()
     {[
     "heat": 1,
-    "off": 11,
+    "eco": 11,
     ]}
 
 def setCoolingSetpoint(coolingSetpoint)
     {
-    if (logEnable) log.debug "${device.displayName} does not support cool setpoint"
-    }
-
-def on()
-    {
-    heat()
+    if (logEnable) log.debug("${device.displayName} does not support cool setpoint")
     }
 
 def heat()
     {
-    if (logEnable) log.debug "On (heat) mode applied"
+    if (logEnable) log.debug("heat mode applied")
     delayBetween([
         zwave.thermostatModeV2.thermostatModeSet(mode: 1).format(),
         zwave.thermostatModeV2.thermostatModeGet().format()
         ], 1000)
     }
 
-def off()
-    {
-    eco()
-    }
-
 def eco()
     {
-    if (logEnable) log.debug "Off (eco) mode applied"
+    if (logEnable) log.debug("Eco mode applied")
     delayBetween([
         zwave.thermostatModeV2.thermostatModeSet(mode: 11).format(),
         zwave.thermostatModeV2.thermostatModeGet().format()
@@ -344,42 +351,52 @@ def eco()
 
 def auto()
     {
-    if (logEnable) log.debug "${device.displayName} does not support auto mode"
+    if (logEnable) log.debug("${device.displayName} does not support auto mode")
     }
 
 def emergencyHeat()
     {
-    if (logEnable) log.debug "${device.displayName} does not support emergency heat mode"
+    if (logEnable) log.debug("${device.displayName} does not support emergency heat mode")
     }
 
 def cool()
     {
-    if (logEnable) log.debug "${device.displayName} does not support cool mode"
+    if (logEnable) log.debug("${device.displayName} does not support cool mode")
     }
 
 def setThermostatMode(String value)
     {
-    //if (value == "eco") eco()
-    if (value == "off") off()
-    else heat()
+    if (value == "eco")
+        {
+        eco()
+        }
+    else
+        {
+        heat()
+        }
     }
 
 def fanOn()
     {
-    if (logEnable) log.debug "${device.displayName} does not support fan on"
+    if (logEnable) log.debug("${device.displayName} does not support fan on")
     }
 
 def fanAuto()
     {
-    if (logEnable) log.debug "${device.displayName} does not support fan auto"
+    if (logEnable) log.debug("${device.displayName} does not support fan auto")
+    }
+
+def off()
+    {
+    if (logEnable) log.debug("${device.displayName} does not support off")
     }
 
 def fanCirculate()
     {
-    if (logEnable) log.debug "${device.displayName} does not support fan circulate"
+    if (logEnable) log.debug("${device.displayName} does not support fan circulate")
     }
 
 def setThermostatFanMode()
     {
-    if (logEnable) log.debug "${device.displayName} does not support fan mode"
+    if (logEnable) log.debug("${device.displayName} does not support fan mode")
     }
