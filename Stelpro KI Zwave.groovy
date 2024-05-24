@@ -15,6 +15,7 @@
  * 1.3 tentative modification for homekit and hubitat new take on thermostats
  * 1.4 add poll capability
  * 1.5 refactored for change in Google Home requirements
+ * 1.6 add dummy supportedThermostatFanModes value
  */
  
  metadata
@@ -203,6 +204,7 @@ def zwaveEvent(hubitat.zwave.Command cmd)
 def configure()
     {
     sendEvent(name: "supportedThermostatModes", value: '["heat","off"]', descriptionText: 'supportedThermostatModes set to ["heat","off"]')
+    sendEvent(name: "supportedThermostatFanModes", value: '["auto"]', descriptionText: 'supportedThermostatFanModes set to ["auto"]')
     refresh()
     quickSetHeat(device.currentValue("heatingSetpoint"))
     }
