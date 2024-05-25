@@ -19,7 +19,9 @@
  * 1.7 remove switch capability and reintroduce eco mode to comply with hubitat new dashboard app
  */
  
- metadata
+import groovy.json.JsonOutput
+
+metadata
     {
     definition (name: "Stelpro Ki Thermostat", namespace: "stelpro", author: "Stelpro")
         {
@@ -29,6 +31,9 @@
         capability "Refresh"
         capability 'TemperatureMeasurement'
 
+		attribute "supportedThermostatFanModes", "JSON_OBJECT"
+		attribute "supportedThermostatModes", "JSON_OBJECT"
+            
         command ("setThermostatMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["heat","eco"]]])
         command ("setThermostatFanMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["on"]]])
 
@@ -219,8 +224,8 @@ def zwaveEvent(hubitat.zwave.Command cmd)
 
 def configure()
     {
-    sendEvent(name: "supportedThermostatModes", value: '["heat","eco"]', descriptionText: 'supportedThermostatModes set to ["heat","eco"]')
-    sendEvent(name: "supportedThermostatFanModes", value: '["on"]', descriptionText: 'supportedThermostatFanModes set to ["on"]')
+    sendEvent(name: "supportedThermostatFanModes", value: JsonOutput.toJson(["on"]))
+    sendEvent(name: "supportedThermostatModes", value: JsonOutput.toJson(["heat", "eco"]))
     sendEvent(name: "thermostatFanMode", value: "on")
     refresh()
     quickSetHeat(device.currentValue("heatingSetpoint"))
