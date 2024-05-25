@@ -16,7 +16,7 @@
  * 1.4 add poll capability
  * 1.5 refactored for change in Google Home requirements
  * 1.6 fix logging, reintroduce switch capability
- * 1.7 Add fan modes, remove switch capability and reintroduce eco mode to comply with hubitat new dashboard app
+ * 1.7 remove switch capability and reintroduce eco mode to comply with hubitat new dashboard app
  */
  
  metadata
@@ -27,9 +27,10 @@
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
+        capability 'TemperatureMeasurement'
 
         command ("setThermostatMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["heat","eco"]]])
-        command ("setThermostatFanMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["auto"]]])
+        command ("setThermostatFanMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["on"]]])
 
         fingerprint deviceId: "0x0806", inClusters: "0x5E,0x86,0x72,0x40,0x43,0x31,0x85,0x59,0x5A,0x73,0x20,0x42"
         }      
@@ -219,7 +220,8 @@ def zwaveEvent(hubitat.zwave.Command cmd)
 def configure()
     {
     sendEvent(name: "supportedThermostatModes", value: '["heat","eco"]', descriptionText: 'supportedThermostatModes set to ["heat","eco"]')
-    sendEvent(name: "supportedThermostatFanModes", value: '["auto"]', descriptionText: 'supportedThermostatFanModes set to ["auto"]')
+    sendEvent(name: "supportedThermostatFanModes", value: '["on"]', descriptionText: 'supportedThermostatFanModes set to ["on"]')
+    sendEvent(name: "thermostatFanMode", value: "on")
     refresh()
     quickSetHeat(device.currentValue("heatingSetpoint"))
     }
