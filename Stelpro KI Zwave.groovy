@@ -16,7 +16,7 @@
  * 1.4 add poll capability
  * 1.5 refactored for change in Google Home requirements
  * 1.6 fix logging, reintroduce switch capability
- * 1.7 remove switch capability and reintroduce eco mode to comply with hubitat new dashboard app
+ * 1.7 remove switch capability, add fake fan mode and reintroduce eco mode to comply with hubitat new dashboard app
  */
  
 import groovy.json.JsonOutput
