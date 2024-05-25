@@ -340,6 +340,11 @@ def heat()
         ], 1000)
     }
 
+def off()
+    {
+    eco()
+    }
+
 def eco()
     {
     if (logEnable) log.debug("Eco mode applied")
@@ -384,11 +389,6 @@ def fanOn()
 def fanAuto()
     {
     if (logEnable) log.debug("${device.displayName} does not support fan auto")
-    }
-
-def off()
-    {
-    if (logEnable) log.debug("${device.displayName} does not support off")
     }
 
 def fanCirculate()
