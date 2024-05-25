@@ -31,8 +31,8 @@ metadata
         capability "Refresh"
         capability 'TemperatureMeasurement'
 
-		attribute "supportedThermostatFanModes", "JSON_OBJECT"
-		attribute "supportedThermostatModes", "JSON_OBJECT"
+        attribute "supportedThermostatFanModes", "JSON_OBJECT"
+        attribute "supportedThermostatModes", "JSON_OBJECT"
             
         command ("setThermostatMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["heat","eco"]]])
         command ("setThermostatFanMode", [["name":"Confirmation*", "type":"ENUM", "constraints":["on"]]])
