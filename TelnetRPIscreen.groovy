@@ -102,7 +102,6 @@ def refresh()
 
 def sendMsg(message)
     {
-	//log.info message
     sendHubCommand(new hubitat.device.HubAction(message, hubitat.device.Protocol.TELNET))
     }
 
