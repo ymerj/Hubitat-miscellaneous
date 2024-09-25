@@ -67,7 +67,6 @@ def initialize()
         {
         telnetStatus("connecting") 
         telnetConnect([terminalType: "VT100", termChars:[10]], deviceIp, port.toInteger(), user, pass)
-        runInMillis(3000, telnetStatus, [data: "connected"])
         } 
     catch(e)
         {
@@ -83,6 +82,7 @@ def parse(String msg)
         value = msg.contains("display_power=1")? "on":"off"
         sendEvent(name: "switch", value: value, descriptionText: "${device.label} was turn ${value}")
         }
+    if (msg.contains("Last login")) telnetStatus("connected")
     }
 
 def on()
