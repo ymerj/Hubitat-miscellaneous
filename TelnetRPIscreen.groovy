@@ -18,7 +18,9 @@
 * for the specific language governing permissions and limitations under the License.
 *
 * Version Control:
-* 1.0  2024-02-05 Yves Mercier       Orinal version
+* 1.0  2024-02-05 Yves Mercier    Original version
+* 1.1  2024-09-25 Yves Mercier    Connect and disconnect for each command
+* 1.2  2024-09-26 Yves Mercier    Add connection status check
 */
 
 metadata
@@ -48,6 +50,7 @@ metadata
 def installed()
     {
     log.warn "installed"
+    state.lastEtat = "unknown"
     updated()
     }
 
@@ -65,7 +68,6 @@ def initialize()
     {
     try
         {
-        telnetStatus("connecting") 
         telnetConnect([terminalType: "VT100", termChars:[10]], deviceIp, port.toInteger(), user, pass)
         } 
     catch(e)
@@ -76,7 +78,7 @@ def initialize()
 
 def parse(String msg)
     {
-    log.info msg
+    if (logEnable) log.info msg
     if (msg.contains("display_power"))
         {
         value = msg.contains("display_power=1")? "on":"off"
@@ -102,11 +104,14 @@ def refresh()
 
 def sendMsg(message)
     {
+    if (state.lastEtat != "connected") initialize()
+    pauseExecution(1000)
     sendHubCommand(new hubitat.device.HubAction(message, hubitat.device.Protocol.TELNET))
     }
 
 def telnetStatus(etat)
     {
+    state.lastEtat = etat
     sendEvent(name: "networkStatus", value: etat)
     }
 
